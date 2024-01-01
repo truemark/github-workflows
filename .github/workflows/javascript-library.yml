@@ -24,6 +24,11 @@ on:
         description: 'GitHub name for pushing'
         type: string
         required: true
+      publish-github-pages:
+        description: 'Publish GitHub Pages'
+        type: boolean
+        required: false
+        default: false
     secrets:
       deploy-key:
         description: 'SSH private key for versioning'
@@ -91,3 +96,19 @@ jobs:
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
+      - name: Build GitHub Pages Site
+        if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
+        run: pnpm run site
+      - name: Setup Pages
+        if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
+        uses: actions/configure-pages@v3
+      - name: Upload Artifact
+        if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: 'site/'
+      - name: Deploy to GitHub Pages
+        if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
