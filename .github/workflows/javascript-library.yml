@@ -101,18 +101,18 @@ jobs:
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
       - name: Build Site
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/' + inputs.site-branch
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/${{ inputs.site-branch }}'
         run: pnpm run site
       - name: Setup GitHub Pages
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/' + inputs.site-branch
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/${{ inputs.site-branch }}'
         uses: actions/configure-pages@v3
       - name: Upload Site
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/' + inputs.site-branch
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/${{ inputs.site-branch }}'
         uses: actions/upload-pages-artifact@v2
         with:
           path: 'site/'
       - name: Deploy to GitHub Pages
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/' + inputs.site-branch
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/${{ inputs.site-branch }}'
         id: deployment
         uses: actions/deploy-pages@v2
 
