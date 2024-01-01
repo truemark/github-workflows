@@ -36,6 +36,9 @@ on:
       npm-auth-token:
         description: 'NPM auth token for publishing'
         required: true
+permissions:
+  pages: write
+  id-token: write
 jobs:
   javascript-library:
     runs-on: ubuntu-latest
