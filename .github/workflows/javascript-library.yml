@@ -100,13 +100,13 @@ jobs:
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
-      - name: Build GitHub Pages Site
+      - name: Build Site
         if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
         run: pnpm run site
-      - name: Setup Pages
+      - name: Setup GitHub Pages
         if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
         uses: actions/configure-pages@v3
-      - name: Upload Artifact
+      - name: Upload Site
         if: matrix.node-version == inputs.publish-node-version && inputs.publish-github-pages
         uses: actions/upload-pages-artifact@v2
         with:
