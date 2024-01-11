@@ -105,7 +105,7 @@ jobs:
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
-      - name: Set up env
+      - name: Set up site env
         run: echo "SITE_BRANCH_REF=refs/heads/${{ inputs.site-branch }}" >> $GITHUB_ENV
       - name: Build Site
         if: matrix.node-version == inputs.publish-node-version && github.ref == env.SITE_BRANCH_REF
