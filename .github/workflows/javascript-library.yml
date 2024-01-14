@@ -29,6 +29,16 @@ on:
         type: string
         required: false
         default: ''
+      version-dir:
+        description: 'Directory to change to before running version commands'
+        type: string
+        required: false
+        default: '.'
+      publish-dir:
+        description: 'Directory to change to before running publish commands'
+        type: string
+        required: false
+        default: '.'
     secrets:
       deploy-key:
         description: 'SSH private key for versioning'
@@ -74,10 +84,10 @@ jobs:
         run: pnpm i --frozen-lockfile --prefer-offline
       - name: Increment alpha version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop'
-        run: echo VERSION="$(pnpm version prerelease --preid alpha --no-git-tag-version)" >> $GITHUB_ENV
+        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid alpha --no-git-tag-version)" >> $GITHUB_ENV
       - name: Increment release version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main'
-        run: echo VERSION="$(pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
+        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
@@ -99,12 +109,16 @@ jobs:
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
+          cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
+          cd ${{ github.workspace }}
       - name: Publish release ${{ env.VERSION }} to registry
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
+          cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
+          cd ${{ github.workspace }}
       - name: Set up site env
         run: echo "SITE_BRANCH_REF=refs/heads/${{ inputs.site-branch }}" >> $GITHUB_ENV
       - name: Build Site
