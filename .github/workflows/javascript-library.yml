@@ -129,7 +129,7 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Upload Site
         if: matrix.node-version == inputs.publish-node-version && github.ref == env.SITE_BRANCH_REF
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: 'site/'
       - name: Deploy to GitHub Pages
