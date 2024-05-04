@@ -24,9 +24,8 @@
 #    name: Add issue to project
 #    uses: nr1etech/github-workflows/.github/workflows/issues.yml@main
 #    secrets:
-#      app_key: ${{ secrets.PRIVATE_KEY }}
-#    with:
-#      app_id: ${{ vars.APP_ID }}
+#      app-key: ${{ secrets.PRIVATE_KEY }}
+#      app-id: ${{ vars.APP_ID }}
 
 name: Issues
 on:
