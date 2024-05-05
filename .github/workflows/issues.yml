@@ -79,6 +79,11 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.private-key }}
       - uses: actions/add-to-project@v1.0.1
         with:
           project-url: $${{ matrix.url }}
