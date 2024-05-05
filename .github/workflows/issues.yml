@@ -86,5 +86,5 @@ jobs:
           private-key: ${{ secrets.private-key }}
       - uses: actions/add-to-project@v1.0.1
         with:
-          project-url: $${{ matrix.url }}
+          project-url: ${{ matrix.url }}
           github-token: ${{ steps.app-token.outputs.token }}
