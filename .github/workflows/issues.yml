@@ -43,7 +43,7 @@ jobs:
     outputs:
       MATRIX: ${{ steps.set-matrix.outputs.MATRIX }}
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v1.10.0
         id: app-token
         with:
           app-id: ${{ secrets.app-id }}
