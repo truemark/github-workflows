@@ -65,7 +65,7 @@ jobs:
           variables: |
             name: ${{ github.event.repository.name }}
             owner: ${{ github.event.repository.owner.login }}
-          github-token: ${{ steps.create_app_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.create_app_token.outputs.token }}
       - id: set-matrix
         run: |
           MATRIX=$(echo '${{ steps.get-projects.outputs.data }}' |  jq -r '{url: [.repository.projectsV2.nodes[].url]}')
