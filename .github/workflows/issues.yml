@@ -62,13 +62,10 @@ jobs:
                 }
               }
             }
-          mediaType: |
-            previews: []
-            headers:
-              authorization: Bearer ${{ steps.create_app_token.outputs.token }}
           variables: |
             name: ${{ github.event.repository.name }}
             owner: ${{ github.event.repository.owner.login }}
+          token: ${{ steps.create_app_token.outputs.token }}
       - id: set-matrix
         run: |
           MATRIX=$(echo '${{ steps.get-projects.outputs.data }}' |  jq -r '{url: [.repository.projectsV2.nodes[].url]}')
