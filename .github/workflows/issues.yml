@@ -65,6 +65,7 @@ jobs:
           variables: |
             name: ${{ github.event.repository.name }}
             owner: ${{ github.event.repository.owner.login }}
+        env:
           GITHUB_TOKEN: ${{ steps.create_app_token.outputs.token }}
       - id: set-matrix
         run: |
