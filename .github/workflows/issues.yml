@@ -41,7 +41,8 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      MATRIX: ${{ steps.set-matrix.outputs.MATRIX }}
+      matrix: ${{ steps.set-matrix.outputs.MATRIX }}
+      github-token: ${{ steps.app-token.outputs.token }}
     steps:
       - uses: actions/create-github-app-token@v1.10.0
         id: app-token
@@ -75,16 +76,11 @@ jobs:
   add-to-project:
     needs: [prepare]
     strategy:
-      matrix: ${{ fromJson(needs.prepare.outputs.MATRIX) }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.app-id }}
-          private-key: ${{ secrets.private-key }}
       - uses: actions/add-to-project@v1.0.1
         with:
           project-url: $${{ matrix.url }}
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ needs.prepare.outputs.github-token }}
