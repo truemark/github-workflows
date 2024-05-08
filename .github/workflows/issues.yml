@@ -6,8 +6,7 @@
 # all projects associated with the repository.
 #
 # To use this workflow, you need to create a GitHub application with a private
-# key and pass the key as a secret to this workflow. This is recommended over
-# using personal access tokens which is also supported.
+# key and pass the key as an secret to this workflow.
 #
 # GitHub App Permissions Required
 # - Read and Write access to organization projects
@@ -34,13 +33,10 @@ on:
     secrets:
       private-key:
         description: "GitHub App Key"
-        required: false
+        required: true
       app-id:
         description: "GitHub App ID"
-        required: false
-      add_to_project_pat:
-        description: "Personal Access Token for adding issues to project"
-        required: false
+        required: true
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -48,18 +44,10 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.MATRIX }}
     steps:
       - uses: actions/create-github-app-token@v1.10.0
-        if: secrets.private-key && secrets.app-id
         id: app-token
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.private-key }}
-      - id: set-env
-        run: |
-          if [[ "${{ secrets.private-key }}" && "${{ secrets.app-id }}" ]]; then
-            echo "GITHUB_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
-          else
-            echo "GITHUB_TOKEN=${{ secrets.add_to_project_pat }}" >> $GITHUB_ENV
-          fi
       - uses: octokit/graphql-action@v2.3.1
         id: get-projects
         with:
@@ -78,7 +66,7 @@ jobs:
             name: ${{ github.event.repository.name }}
             owner: ${{ github.event.repository.owner.login }}
         env:
-          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - id: set-matrix
         run: |
           MATRIX=$(echo '${{ steps.get-projects.outputs.data }}' |  jq -r '{url: [.repository.projectsV2.nodes[].url]}')
@@ -92,19 +80,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1.10.0
-        if: secrets.private-key && secrets.app-id
         id: app-token
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.private-key }}
-      - id: set-env
-        run: |
-          if [[ "${{ secrets.private-key }}" && "${{ secrets.app-id }}" ]]; then
-            echo "GITHUB_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
-          else
-            echo "GITHUB_TOKEN=${{ secrets.add_to_project_pat }}" >> $GITHUB_ENV
-          fi
       - uses: actions/add-to-project@v1.0.1
         with:
           project-url: ${{ matrix.url }}
-          github-token: ${{ env.GITHUB_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
