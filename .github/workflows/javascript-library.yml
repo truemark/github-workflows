@@ -1,3 +1,7 @@
+###############################################################################
+# Javascript Library Workflow
+# Build, test and publish a Javascript Library
+###############################################################################
 on:
   workflow_call:
     inputs:
