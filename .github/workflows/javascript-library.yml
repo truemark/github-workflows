@@ -119,7 +119,7 @@ jobs:
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
           cd ${{ github.workspace }}
-      - name: Set up site env
+      - name: Setup site env
         run: echo "SITE_BRANCH_REF=refs/heads/${{ inputs.site-branch }}" >> $GITHUB_ENV
       - name: Build Site
         if: matrix.node-version == inputs.publish-node-version && github.ref == env.SITE_BRANCH_REF
