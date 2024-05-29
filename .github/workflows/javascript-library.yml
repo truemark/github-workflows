@@ -107,9 +107,7 @@ jobs:
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
-          git remote
-          git remote get-url origin
-          git remote set-url origin $(git remote get-url orign | sed "s/github/${{steps.app-token.outputs.token}}@github/")
+          git remote set-url origin $(git remote get-url origin | sed "s/github/${{steps.app-token.outputs.token}}@github/")
 #          git remote set-url origin "https://${{steps.app-token.outputs.token}}@$(git remote get-url origin | sed 's/.*://')"
 #          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
       - name: Commit and push version bump
