@@ -2,6 +2,11 @@
 # Javascript Library Workflow
 # Build, test and publish a Javascript Library
 ###############################################################################
+# Assumptions made in this workflow:
+# - The branch you create releases from is called 'main'
+# - The branch you create canary releases from is called 'develop'
+# - You have a GitHub App that allows content changes to the repository
+
 on:
   workflow_call:
     inputs:
@@ -45,6 +50,11 @@ on:
         type: string
         required: false
         default: '.'
+      merge-back:
+        description: 'Merge back to develop after release'
+        type: boolean
+        required: false
+        default: true
     secrets:
       npm-auth-token:
         description: 'NPM auth token for publishing'
@@ -151,4 +161,10 @@ jobs:
         if: matrix.node-version == inputs.publish-node-version && github.ref == env.SITE_BRANCH_REF
         id: deployment
         uses: actions/deploy-pages@v4
-
+      - name: Push back to develop
+        if: inputs.merge-back == true && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git fetch -all
+          git checkout develop
+          git merge main
+          git push origin develop
