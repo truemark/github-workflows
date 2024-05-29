@@ -63,10 +63,17 @@ jobs:
       matrix:
         node-version: ${{ fromJson(inputs.node-versions) }}
     steps:
+      - name: Generate token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3
+        with:
+          app_id: ${{ secrets.app-id }}
+          private_key: ${{ secrets.private-key }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.deploy-key }}
+          token: ${{ steps.app-token.outputs.token }}
+#          ssh-key: ${{ secrets.deploy-key }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -96,20 +103,20 @@ jobs:
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
       - run: pnpm build
       - run: pnpm test
-      - uses: actions/create-github-app-token@v1.10.0
-        if: matrix.node-version == inputs.publish-node-version
-        id: app-token
-        with:
-          app-id: ${{ secrets.app-id }}
-          private-key: ${{ secrets.private-key }}
-      - name: Setup git config
-        if: matrix.node-version == inputs.publish-node-version
-        run: |
-          git config user.email "${{ inputs.github-email }}"
-          git config user.name "${{ inputs.github-name }}"
-          git remote set-url origin $(git remote get-url origin | sed "s/github/${{steps.app-token.outputs.token}}@github/")
-#          git remote set-url origin "https://${{steps.app-token.outputs.token}}@$(git remote get-url origin | sed 's/.*://')"
-#          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
+#      - uses: actions/create-github-app-token@v1.10.0
+#        if: matrix.node-version == inputs.publish-node-version
+#        id: app-token
+#        with:
+#          app-id: ${{ secrets.app-id }}
+#          private-key: ${{ secrets.private-key }}
+#      - name: Setup git config
+#        if: matrix.node-version == inputs.publish-node-version
+#        run: |
+#          git config user.email "${{ inputs.github-email }}"
+#          git config user.name "${{ inputs.github-name }}"
+#          git remote set-url origin $(git remote get-url origin | sed "s/github/${{steps.app-token.outputs.token}}@github/")
+##          git remote set-url origin "https://${{steps.app-token.outputs.token}}@$(git remote get-url origin | sed 's/.*://')"
+##          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
       - name: Commit and push version bump
         if: matrix.node-version == inputs.publish-node-version
         run: |
