@@ -48,10 +48,10 @@ on:
         required: true
       private-key:
         description: "GitHub App Key"
-        required: false
+        required: true
       app-id:
         description: "GitHub App ID"
-        required: false
+        required: true
 permissions:
   contents: write
   pages: write
@@ -97,20 +97,17 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - uses: actions/create-github-app-token@v1.10.0
+        if: matrix.node-version == inputs.publish-node-version
         id: app-token
-        if: secrets.app-id && secrets.private-key
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.private-key }}
-      - name: "Setup git credentials helper"
-        if: secrets.app-id && secrets.private-key
-        run: |
-          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
       - name: Setup git config
         if: matrix.node-version == inputs.publish-node-version
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
+          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
       - name: Commit and push version bump
         if: matrix.node-version == inputs.publish-node-version
         run: |
