@@ -46,6 +46,12 @@ on:
       npm-auth-token:
         description: 'NPM auth token for publishing'
         required: true
+      private-key:
+        description: "GitHub App Key"
+        required: false
+      app-id:
+        description: "GitHub App ID"
+        required: false
 permissions:
   contents: write
   pages: write
@@ -90,6 +96,16 @@ jobs:
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
       - run: pnpm build
       - run: pnpm test
+      - uses: actions/create-github-app-token@v1.10.0
+        id: app-token
+        if: secrets.app-id && secrets.private-key
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.private-key }}
+      - name: "Setup git credentials helper"
+        if: secrets.app-id && secrets.private-key
+        run: |
+          git config --global credential.helper '!f() { sleep 1; echo "username=git token=${{ steps.app-token.outputs.token }}"; }; f'
       - name: Setup git config
         if: matrix.node-version == inputs.publish-node-version
         run: |
