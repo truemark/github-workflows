@@ -94,37 +94,37 @@ jobs:
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
       - name: Increment alpha version
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop'
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid alpha --no-git-tag-version)" >> $GITHUB_ENV
       - name: Increment release version
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main'
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
-        if: matrix.node-version == inputs.publish-node-version
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
       - name: Commit and push version bump
-        if: matrix.node-version == inputs.publish-node-version
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         run: |
           git commit -a -m "$VERSION" -m "GitHub Run Number ${{ github.run_number }}" -m "[skip ci]"
           git push
       - name: Create tag ${{ env.VERSION }}
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main'
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           git tag -a "$VERSION" -m "$VERSION"
           git push origin "$VERSION"
       - name: Publish canary ${{ env.VERSION }} to registry
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop'
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
           cd ${{ github.workspace }}
       - name: Publish release ${{ env.VERSION }} to registry
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main'
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
