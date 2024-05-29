@@ -164,7 +164,11 @@ jobs:
       - name: Push back to develop
         if: inputs.merge-back == true && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
+          git status
+          git diff
           git fetch --all
           git checkout develop
           git merge main
+          git status
+          git diff
           git push origin develop
