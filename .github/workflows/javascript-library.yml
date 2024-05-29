@@ -4,12 +4,12 @@ on:
       node-versions:
         description: 'Node versions to use'
         required: false
-        default: '[18,20]'
+        default: '[18,20,22]'
         type: string
       publish-node-version:
         description: 'Node version to use for publish'
         required: false
-        default: '20'
+        default: '22'
         type: string
       pnpm-version:
         description: 'PNPM version to use'
