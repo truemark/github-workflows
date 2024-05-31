@@ -55,10 +55,10 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |-
           version=$(grep 'next_version' version.txt | cut -d '=' -f 2)
-          version=${version#v}
           major=${version%%.*}
-          minor=${version%%.*}
-          patch=${version#*.}
+          rest=${version#*.}
+          minor=${rest%%.*}
+          patch=${rest#*.}
           patch=$((patch + 1))
           new_version="${major}.${minor}.${patch}"
           sed -i '' -e "s/^next_version=.*/next_version=v${new_version}/" version.txt
