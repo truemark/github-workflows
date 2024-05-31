@@ -54,8 +54,6 @@ jobs:
       - name: Increment Version
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |-
-          pwd
-          ls -la
           version=$(grep 'next_version' version.txt | cut -d '=' -f 2)
           major=${version%%.*}
           rest=${version#*.}
@@ -65,8 +63,8 @@ jobs:
           new_version="${major}.${minor}.${patch}"
           echo "Version to Publish: ${version}"
           echo "Next Version: ${new_version}" 
-          sed -i '' -e "s/^next_version=.*/next_version=v${new_version}/" version.txt
-          sed -i '' -e "s/^version=.*/version=v${version}/" version.txt
+          sed -i "s/^next_version=.*/next_version=v${new_version}/" version.txt
+          sed -i "s/^version=.*/version=v${version}/" version.txt
           echo "VERSION=v$version" >> $GITHUB_ENV
       - name: Setup git config
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
