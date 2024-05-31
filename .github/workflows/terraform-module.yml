@@ -63,6 +63,7 @@ jobs:
           new_version="${major}.${minor}.${patch}"
           sed -i '' "s/^next_version=.*/next_version=v$new_version/" version.txt
           sed -i '' "s/^version=.*/version=v$version/" version.txt
+          echo "VERSION=v$version" >> $GITHUB_ENV
       - name: Setup git config
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
