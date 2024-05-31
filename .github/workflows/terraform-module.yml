@@ -82,10 +82,6 @@ jobs:
         run: |
           git tag -a "$VERSION" -m "$VERSION"
           git push origin "$VERSION"
-      - name: Generate release notes
-        id: releasenotes
-        run: |
-          echo "::set-output name=notes::$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:'- %s')"
       - name: Create Release
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/create-release@v1
@@ -94,6 +90,5 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           release_name: Release ${{ env.VERSION }}
-          body: ${{ steps.releasenotes.outputs.notes }}
           draft: false
           prerelease: false
