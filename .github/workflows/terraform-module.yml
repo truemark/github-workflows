@@ -1,0 +1,80 @@
+###############################################################################
+# Terraform Module Workflow
+# Build and publish a Terraform module
+###############################################################################
+# Assumptions made in this workflow:
+# - The branch you create releases from is called 'main'
+# - You have a GitHub App that allows content changes to the repository
+
+on:
+  workflow_call:
+    inputs:
+      github-email:
+        description: 'GitHub email for pushing'
+        required: false
+        default: '41898282+github-actions[bot]@users.noreply.github.co'
+        type: string
+      github-name:
+        description: 'GitHub name for pushing'
+        required: false
+        default: 'github-actions[bot]'
+        type: string
+    secrets:
+      private-key:
+        description: "GitHub App Key"
+        required: true
+      app-id:
+        description: "GitHub App ID"
+        required: true
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  terraform-module:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3
+        with:
+          app_id: ${{ secrets.app-id }}
+          private_key: ${{ secrets.private-key }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Terraform Checks
+        run: |-
+          terraform init
+          terraform validate
+          terraform fmt -check
+      - name: Increment Version
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |-
+          version=$(grep 'next_version' version.txt | cut -d '=' -f 2)
+          version=${version#v}
+          major=${version%%.*}
+          minor=${version%%.*}
+          patch=${version#*.}
+          minor=$((minor + 1))
+          new_version="${major}.${minor}.${patch}"
+          sed -i '' "s/^next_version=.*/next_version=v$new_version/" version.txt
+          sed -i '' "s/^version=.*/version=v$version/" version.txt
+      - name: Setup git config
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git config user.email "${{ inputs.github-email }}"
+          git config user.name "${{ inputs.github-name }}"
+      - name: Commit and push version bump
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git commit -a -m "$VERSION" -m "GitHub Run Number ${{ github.run_number }}" -m "[skip ci]"
+          git push
+      - name: Create tag ${{ env.VERSION }}
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "$VERSION"
