@@ -22,6 +22,7 @@
 #jobs:
 #  add-to-project:
 #    name: Add issue to project
+#    if: github.actor != 'dependabot[bot]'
 #    uses: nr1etech/github-workflows/.github/workflows/issues.yml@main
 #    secrets:
 #      app-key: ${{ secrets.PRIVATE_KEY }}
