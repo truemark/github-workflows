@@ -1,0 +1,55 @@
+###############################################################################
+# Javascript Library Build Workflow
+# Build and test a JavaaScript Library
+###############################################################################
+
+on:
+  workflow_call:
+    inputs:
+      node-versions:
+        description: 'Node versions to use'
+        required: false
+        default: '[18,20,22]'
+        type: string
+      pnpm-version:
+        description: 'PNPM version to use'
+        required: false
+        default: '9'
+        type: string
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ${{ fromJson(inputs.node-versions) }}
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ inputs.pnpm-version }}
+          run_install: false
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      - name: Get pnpm store directory
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: "${{ runner.os }}-${{ matrix.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}"
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.node-version }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile --prefer-offline
+      - run: pnpm build
+      - run: pnpm test
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
