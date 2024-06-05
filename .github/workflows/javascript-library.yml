@@ -1,6 +1,6 @@
 ###############################################################################
 # Javascript Library Workflow
-# Build, test and publish a Javascript Library
+# Build, test and publish a JavaScript Library
 ###############################################################################
 # Assumptions made in this workflow:
 # - The branch you create releases from is called 'main'
@@ -82,7 +82,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
           version: ${{ inputs.pnpm-version }}
           run_install: false
@@ -156,3 +156,12 @@ jobs:
         if: matrix.node-version == inputs.publish-node-version && github.ref == env.SITE_BRANCH_REF
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Upload artifacts
+        if: matrix.node-version == inputs.publish-node-version
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: |
+            *
+            !node_modules
+            !**/node_modules
