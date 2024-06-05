@@ -6,6 +6,7 @@ on:
 jobs:
   add-to-project:
     name: Add issue to project
+    if: github.actor != 'dependabot[bot]'
     uses: ./.github/workflows/issues.yml
     secrets:
       private-key: ${{ secrets.ISSUES_BOT_KEY }}
