@@ -1,6 +1,6 @@
 ###############################################################################
 # Javascript Library Workflow
-# Build, test and publish a Javascript Library
+# Build, test and publish a JavaScript Library
 ###############################################################################
 # Assumptions made in this workflow:
 # - The branch you create releases from is called 'main'
