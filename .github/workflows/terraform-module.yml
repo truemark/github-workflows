@@ -46,11 +46,12 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
-      - name: Terraform Checks
-        run: |-
-          terraform init
-          terraform validate
-          terraform fmt -check
+      - name: Terraform Init
+        run: terraform init
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform Fmt Check
+        run: terraform fmt -check
       - name: Increment Version
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |-
