@@ -125,6 +125,16 @@ jobs:
         run: |
           git tag -a "$VERSION" -m "$VERSION"
           git push origin "$VERSION"
+      - name: Create Release
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token  }}
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
       - name: Publish canary ${{ env.VERSION }} to registry
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
         run: |
