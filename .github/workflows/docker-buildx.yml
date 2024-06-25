@@ -33,6 +33,11 @@ on:
         required: false
         type: string
         default: "linux/arm64,linux/amd64"
+      # docker_build_args example - ["ARG1=value1","ARG2=value2"]
+      docker_build_args:
+        description: "Docker build args"
+        required: false
+        type: string
       use_remote:
         description: "Use remote buildx"
         required: false
@@ -97,13 +102,14 @@ jobs:
           aws-region: "us-east-1"
       - name: Build Docker
         run: |
+          ARGS=$(echo '${{ inputs.docker_build_args }}' | jq -r '.[]' | awk '{print "--build-arg " $0}')
           docker buildx build \
             --push \
             --platform ${{ inputs.platform }} \
             -f ${{ inputs.dockerfile }} \
             -t $(echo ${{ inputs.images }} | sed -e "s/,/ -t /g") \
             --target ${{ inputs.target }} \
-            .
+            $ARGS .
   copy-images:
     if: inputs.copy_to_ecr_prefix != null
     needs: [prepare, build]
