@@ -127,7 +127,7 @@ jobs:
           git push origin "$VERSION"
       - name: Create Release
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/create-release@v1
+        uses: actions/create-release@v2
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token  }}
         with:
