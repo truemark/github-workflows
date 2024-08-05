@@ -1,0 +1,79 @@
+on:
+  workflow_call:
+    inputs:
+      cluster_name:
+        description: "Name of the EKS cluster"
+        required: true
+        type: string
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: string
+      namespace:
+        description: "Namespace to deploy to"
+        required: true
+        type: string
+      role-to-assume:
+        description: "Role to assume"
+        required: true
+        type: string
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+      app-name:
+        description: "Name of the application"
+        required: true
+        type: string
+
+jobs:
+  integration-tests:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.role-to-assume }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Setup Cluster Access
+        run: |
+          aws eks update-kubeconfig --name ${{ inputs.cluster_name }} --kubeconfig ./kubeconfig
+          echo 'KUBE_CONFIG_DATA<<EOF' >> $GITHUB_ENV
+          echo $(cat ./kubeconfig | base64) >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Deploy Integration Tests
+        uses: truemark/kubectl-jobs-action@develop
+        with:
+          KUBE_CONFIG_DATA: ${{ env.KUBE_CONFIG_DATA }}
+          command: kubectl apply -f integration-tests/${{ inputs.environment }} --namespace ${{ inputs.namespace }}
+
+      - name: Pull Logs and Clean Up Integration Tests
+        id: integration-tests
+        uses: truemark/kubectl-jobs-action@develop
+        with:
+          KUBE_CONFIG_DATA: ${{ env.KUBE_CONFIG_DATA }}
+          job-name: integration-tests-${{ inputs.environment }}-${{ inputs.app-name }}
+          namespace: ${{ inputs.namespace }}
+          job-filepath: integration-tests/${{ inputs.environment }}
+          sleep-time: 5
+          log-follow-duration: 60
+          cluster-name: ${{ inputs.cluster_name }}
+
+      - name: Upload Target
+        if: failure() && steps.integration-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed_tests_${{ inputs.environment }}
+          path: |
+            failed_tests/**
+
+      - name: Cleanup Workspace
+        if: failure() && steps.integration-tests.outcome == 'failure'
+        run: |
+          if [ -d ./failed_tests ]; then
+            sudo rm -rf ./failed_tests
+          fi

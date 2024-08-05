@@ -1,0 +1,35 @@
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: string
+      role-to-assume:
+        description: "Role to assume"
+        required: true
+        type: string
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container: # Replace with GitHub action in the future
+      image: public.ecr.aws/truemark/aws-cdk:ubuntu
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.role-to-assume }}
+          aws-region: ${{ inputs.region }}
+
+      - name: CDK Deploy
+        run: |
+          cd cdk
+          pnpm i --frozen-lockfile
+          cdk -c env=${{ inputs.environment }} deploy --require-approval never
