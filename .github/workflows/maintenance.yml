@@ -1,6 +1,6 @@
 name: Maintenance Mode
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       environment:
         description: "Environment of Application"
