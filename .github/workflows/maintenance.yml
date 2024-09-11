@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   maintenance:
+    runs-on: self-hosted
     steps:
       - name: Set ENV Variables
         id: set-env
