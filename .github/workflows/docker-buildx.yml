@@ -103,12 +103,16 @@ jobs:
       - name: Build Docker
         run: |
           ARGS=$(echo '${{ inputs.docker_build_args }}' | jq -r '.[]' | awk '{print "--build-arg " $0 " \\"}')
+          TARGET=""
+          if [ -n "${{ inputs.target }}" ]; then
+            TARGET="--target ${{ inputs.target }}"
+          fi
           docker buildx build \
             --push \
             --platform ${{ inputs.platform }} \
             -f ${{ inputs.dockerfile }} \
             -t $(echo ${{ inputs.images }} | sed -e "s/,/ -t /g") \
-            --target ${{ inputs.target }} \
+            $TARGET \ 
             $ARGS .
   copy-images:
     if: inputs.copy_to_ecr_prefix != null
