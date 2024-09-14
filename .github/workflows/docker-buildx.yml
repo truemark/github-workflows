@@ -112,8 +112,7 @@ jobs:
             --platform ${{ inputs.platform }} \
             -f ${{ inputs.dockerfile }} \
             -t $(echo ${{ inputs.images }} | sed -e "s/,/ -t /g") \
-            $TARGET \ 
-            $ARGS .
+            $TARGET $ARGS .
   copy-images:
     if: inputs.copy_to_ecr_prefix != null
     needs: [prepare, build]
