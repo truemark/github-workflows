@@ -102,7 +102,7 @@ jobs:
           aws-region: "us-east-1"
       - name: Build Docker
         run: |
-          ARGS=$(echo '${{ inputs.docker_build_args }}' | jq -r '.[]' | awk '{print "--build-arg " $0}')
+          ARGS=$(echo '${{ inputs.docker_build_args }}' | jq -r '.[]' | awk '{print "--build-arg " $0 " \\"}')
           docker buildx build \
             --push \
             --platform ${{ inputs.platform }} \
