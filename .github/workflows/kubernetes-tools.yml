@@ -1,5 +1,4 @@
 name: Kubernetes Tool Set
-description: 'A set of tools to work with Kubernetes including kubectl, helm, and yq.'
 
 on:
   workflow_call:
