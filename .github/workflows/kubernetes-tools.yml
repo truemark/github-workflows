@@ -7,10 +7,12 @@ on:
         description: "Version of kubectl to install"
         default: "latest"
         required: false
+        type: string
       helm-version:
         description: "Version of Helm to install"
         default: "latest"
         required: false
+        type: string
 
 jobs:
   setup:
