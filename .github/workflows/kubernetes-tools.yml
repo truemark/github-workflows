@@ -1,15 +1,17 @@
 name: Kubernetes Tool Set
 description: 'A set of tools to work with Kubernetes including kubectl, helm, and yq.'
 
-inputs:
-  kubectl-version:
-    description: "Version of kubectl to install"
-    default: "latest"
-    required: false
-  helm-version:
-    description: "Version of Helm to install"
-    default: "latest"
-    required: false
+on:
+  workflow_call:
+    inputs:
+      kubectl-version:
+        description: "Version of kubectl to install"
+        default: "latest"
+        required: false
+      helm-version:
+        description: "Version of Helm to install"
+        default: "latest"
+        required: false
 
 jobs:
   setup:
