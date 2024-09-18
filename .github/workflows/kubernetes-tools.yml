@@ -14,32 +14,31 @@ on:
         required: false
         type: string
 
-jobs:
-  runs: "bash"
-  setup:
-    steps:
-      - name: Install yq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y yq
+runs:
+  using: "composite"
+  steps:
+    - name: Install yq
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yq
 
-      - name: Install kubectl
-        run: |
-          if [ "${{ inputs.kubectl-version }}" = "latest" ]; then
-            kubectl_version=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-          else
-            kubectl_version="${{ inputs.kubectl-version }}"
-          fi
-          curl -LO "https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          kubectl version --client
+    - name: Install kubectl
+      run: |
+        if [ "${{ inputs.kubectl-version }}" = "latest" ]; then
+          kubectl_version=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+        else
+          kubectl_version="${{ inputs.kubectl-version }}"
+        fi
+        curl -LO "https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        kubectl version --client
 
-      - name: Install Helm
-        run: |
-          if [ "${{ inputs.helm-version }}" = "latest" ]; then
-            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          else
-            curl -L https://get.helm.sh/helm-${{ inputs.helm-version }}-linux-amd64.tar.gz | tar xz
-            sudo mv linux-amd64/helm /usr/local/bin/helm
-          fi
-          helm version
+    - name: Install Helm
+      run: |
+        if [ "${{ inputs.helm-version }}" = "latest" ]; then
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          curl -L https://get.helm.sh/helm-${{ inputs.helm-version }}-linux-amd64.tar.gz | tar xz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+        fi
+        helm version
