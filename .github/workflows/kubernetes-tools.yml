@@ -1,18 +1,17 @@
 name: Kubernetes Tool Set
+description: "Installs kubectl, yq, and helm."
 
-on:
-  workflow_call:
-    inputs:
-      kubectl-version:
-        description: "Version of kubectl to install"
-        default: "latest"
-        required: false
-        type: string
-      helm-version:
-        description: "Version of Helm to install"
-        default: "latest"
-        required: false
-        type: string
+inputs:
+  kubectl-version:
+    description: "Version of kubectl to install"
+    default: "latest"
+    required: false
+    type: string
+  helm-version:
+    description: "Version of Helm to install"
+    default: "latest"
+    required: false
+    type: string
 
 runs:
   using: "composite"
