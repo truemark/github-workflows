@@ -50,6 +50,16 @@ on:
         type: string
         required: false
         default: '.'
+      develop-preid:
+        description: 'Preid for develop releases'
+        type: string
+        required: false
+        default: 'alpha'
+      branch-preid:
+        description: 'Preid for branch releases'
+        type: string
+        required: false
+        default: ''
     secrets:
       npm-auth-token:
         description: 'NPM auth token for publishing to the npm registry'
@@ -102,12 +112,18 @@ jobs:
             ${{ runner.os }}-${{ matrix.node-version }}-pnpm-store-
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
-      - name: Increment alpha version
+      - name: Increment develop branch version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
-        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid alpha --no-git-tag-version)" >> $GITHUB_ENV
-      - name: Increment release version
+        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid ${{ inputs.develop-preid }} --no-git-tag-version)" >> $GITHUB_ENV
+      - name: Increment main branch version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
+      - name: Set other branch version
+        if: matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.branch-preid != ''
+        run: | 
+          echo VERSION="$(cd ${{ inputs.version-dir }} >> $GITHUB_ENV
+          pnpm version prerelease --preid ${{ inputs.branch-preid }} --no-git-tag-version)"
+          sed -i '' -E "s/(\"version\": \"[0-9]+\.[0-9]+\.[0-9]+-alpha\.)[0-9]+\"/\1$(date +%s)\"/" package.json
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
@@ -137,19 +153,26 @@ jobs:
           prerelease: false
       - name: Set environment variable
         run: echo "NPM_AUTH_TOKEN_SET=${{ secrets.npm-auth-token != '' }}" >> $GITHUB_ENV
-      - name: Publish canary ${{ env.VERSION }} to registry
+      - name: Publish develop branch canary ${{ env.VERSION }} to registry
         if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
           cd ${{ github.workspace }}
-      - name: Publish release ${{ env.VERSION }} to registry
+      - name: Publish main branch release ${{ env.VERSION }} to registry
         if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
+          cd ${{ github.workspace }}
+      - name: Publish other branch canary ${{ env.VERSION }} to registry
+        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' && github.event_name != 'pull_request' && inputs.branch-preid != ''
+        run: |
+          pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
+          cd ${{ inputs.publish-dir }}
+          pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
           cd ${{ github.workspace }}
       - name: Setup site env
         run: echo "SITE_BRANCH_REF=refs/heads/${{ inputs.site-branch }}" >> $GITHUB_ENV
