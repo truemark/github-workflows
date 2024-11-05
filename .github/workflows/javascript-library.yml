@@ -122,7 +122,7 @@ jobs:
         if: matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.branch-preid != ''
         run: |
           cd ${{ inputs.version-dir }}
-          TEMP_VERSION="$(pnpm version prerelease --preid ${{ inputs.branch-preid }} --no-git-tag-version)"
+          TEMP_VERSION="$(pnpm version prerelease --preid ${{ inputs.branch-preid }} --no-git-tag-version | sed 's/v//')"
           echo "TEMP_VERSION=${TEMP_VERSION}" >> $GITHUB_ENV
           VERSION="$(echo ${TEMP_VERSION} | sed -E "s/[0-9]+$/$(date +%s)/")"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
