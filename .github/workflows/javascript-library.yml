@@ -124,7 +124,7 @@ jobs:
           cd ${{ inputs.version-dir }}
           TEMP_VERSION="$(pnpm version prerelease --preid ${{ inputs.branch-preid }} --no-git-tag-version)"
           echo "TEMP_VERSION=${TEMP_VERSION}" >> $GITHUB_ENV
-          VERSION="$(echo ${{ env.TEMP_VERSION }} | sed -E "s/[0-9]+$/$(date +%s)/")"
+          VERSION="$(echo ${TEMP_VERSION} | sed -E "s/[0-9]+$/$(date +%s)/")"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           sed -i -E "s/${TEMP_VERSION}/${VERSION}/" package.json
       - run: pnpm build
