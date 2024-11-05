@@ -130,12 +130,12 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
       - name: Commit and push version bump
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
         run: |
           git commit -a -m "$VERSION" -m "GitHub Run Number ${{ github.run_number }}" -m "[skip ci]"
           git push
@@ -156,26 +156,19 @@ jobs:
           prerelease: false
       - name: Set environment variable
         run: echo "NPM_AUTH_TOKEN_SET=${{ secrets.npm-auth-token != '' }}" >> $GITHUB_ENV
-      - name: Publish develop branch canary ${{ env.VERSION }} to registry
-        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+      - name: Publish canary ${{ env.VERSION }} to registry
+        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && (github.ref == 'refs/heads/develop' || (inputs.branch-preid != '' && github.ref != 'refs/heads/main')) && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
           cd ${{ github.workspace }}
-      - name: Publish main branch release ${{ env.VERSION }} to registry
+      - name: Publish release ${{ env.VERSION }} to registry
         if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
           pnpm publish --publish-branch ${GITHUB_REF#refs/heads/}
-          cd ${{ github.workspace }}
-      - name: Publish other branch canary ${{ env.VERSION }} to registry
-        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' && github.event_name != 'pull_request' && inputs.branch-preid != ''
-        run: |
-          pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
-          cd ${{ inputs.publish-dir }}
-          pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
           cd ${{ github.workspace }}
       - name: Setup site env
         run: echo "SITE_BRANCH_REF=refs/heads/${{ inputs.site-branch }}" >> $GITHUB_ENV
