@@ -50,6 +50,16 @@ on:
         type: string
         required: false
         default: '.'
+      develop-preid:
+        description: 'Preid for develop releases'
+        type: string
+        required: false
+        default: 'alpha'
+      branch-preid:
+        description: 'Preid for branch releases'
+        type: string
+        required: false
+        default: ''
     secrets:
       npm-auth-token:
         description: 'NPM auth token for publishing to the npm registry'
@@ -102,21 +112,30 @@ jobs:
             ${{ runner.os }}-${{ matrix.node-version }}-pnpm-store-
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
-      - name: Increment alpha version
+      - name: Increment develop branch version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
-        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid alpha --no-git-tag-version)" >> $GITHUB_ENV
-      - name: Increment release version
+        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid ${{ inputs.develop-preid }} --no-git-tag-version)" >> $GITHUB_ENV
+      - name: Increment main branch version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
+      - name: Set other branch version
+        if: matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.branch-preid != ''
+        run: |
+          cd ${{ inputs.version-dir }}
+          TEMP_VERSION="$(pnpm version prerelease --preid ${{ inputs.branch-preid }} --no-git-tag-version | sed 's/v//')"
+          echo "TEMP_VERSION=${TEMP_VERSION}" >> $GITHUB_ENV
+          VERSION="$(echo ${TEMP_VERSION} | sed -E "s/[0-9]+$/$(date +%s)/")"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          sed -i -E "s/${TEMP_VERSION}/${VERSION}/" package.json
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
       - name: Commit and push version bump
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
         run: |
           git commit -a -m "$VERSION" -m "GitHub Run Number ${{ github.run_number }}" -m "[skip ci]"
           git push
@@ -138,7 +157,7 @@ jobs:
       - name: Set environment variable
         run: echo "NPM_AUTH_TOKEN_SET=${{ secrets.npm-auth-token != '' }}" >> $GITHUB_ENV
       - name: Publish canary ${{ env.VERSION }} to registry
-        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+        if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && (github.ref == 'refs/heads/develop' || (inputs.branch-preid != '' && github.ref != 'refs/heads/main')) && github.event_name != 'pull_request'
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}

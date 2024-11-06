@@ -1,6 +1,6 @@
 ###############################################################################
 # Javascript Library Build Workflow
-# Build and test a JavaaScript Library
+# Build and test a JavaScript Library
 ###############################################################################
 
 on:
