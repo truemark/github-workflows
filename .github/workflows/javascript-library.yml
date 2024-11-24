@@ -55,6 +55,11 @@ on:
         type: string
         required: false
         default: 'alpha'
+      develop-use-timestamp:
+        description: 'Use timestamps for develop releases'
+        type: boolean
+        required: false
+        default: true
       branch-preid:
         description: 'Preid for branch releases'
         type: string
@@ -112,13 +117,22 @@ jobs:
             ${{ runner.os }}-${{ matrix.node-version }}-pnpm-store-
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
-      - name: Increment develop branch version
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
-        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid ${{ inputs.develop-preid }} --no-git-tag-version)" >> $GITHUB_ENV
       - name: Increment main branch version
         if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version patch --no-git-tag-version)" >> $GITHUB_ENV
-      - name: Set other branch version
+      - name: Increment develop branch version
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.develop-use-timestamp == false
+        run: echo VERSION="$(cd ${{ inputs.version-dir }} && pnpm version prerelease --preid ${{ inputs.develop-preid }} --no-git-tag-version)" >> $GITHUB_ENV
+      - name: Set develop branch version with timestamp
+        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.develop-use-timestamp == true
+        run: |
+          cd ${{ inputs.version-dir }}
+          TEMP_VERSION="$(pnpm version prerelease --preid ${{ inputs.develop-preid }} --no-git-tag-version | sed 's/v//')"
+          echo "TEMP_VERSION=${TEMP_VERSION}" >> $GITHUB_ENV
+          VERSION="$(echo ${TEMP_VERSION} | sed -E "s/[0-9]+$/$(date +%s)/")"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          sed -i -E "s/${TEMP_VERSION}/${VERSION}/" package.json
+      - name: Set other branch version with timestamp
         if: matrix.node-version == inputs.publish-node-version && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && inputs.branch-preid != ''
         run: |
           cd ${{ inputs.version-dir }}
@@ -130,22 +144,22 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - name: Setup git config
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/develop' && inputs.develop-use-timestamp == false))
         run: |
           git config user.email "${{ inputs.github-email }}"
           git config user.name "${{ inputs.github-name }}"
       - name: Commit and push version bump
-        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || inputs.branch-preid != '')
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/develop' && inputs.develop-use-timestamp == false))
         run: |
           git commit -a -m "$VERSION" -m "GitHub Run Number ${{ github.run_number }}" -m "[skip ci]"
           git push
       - name: Create tag ${{ env.VERSION }}
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           git tag -a "$VERSION" -m "$VERSION"
           git push origin "$VERSION"
       - name: Create Release
-        if: matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: matrix.node-version == inputs.publish-node-version && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: comnoco/create-release-action@v2
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token  }}
