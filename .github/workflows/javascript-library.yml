@@ -175,7 +175,7 @@ jobs:
         run: |
           pnpm config set "$(npm config get registry | sed -e 's/https://g'):_authToken" "${{ secrets.npm-auth-token }}"
           cd ${{ inputs.publish-dir }}
-          pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary
+          pnpm publish --publish-branch ${GITHUB_REF#refs/heads/} --tag canary --no-git-checks
           cd ${{ github.workspace }}
       - name: Publish release ${{ env.VERSION }} to registry
         if: env.NPM_AUTH_TOKEN_SET == 'true' && matrix.node-version == inputs.publish-node-version && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
