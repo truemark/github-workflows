@@ -1,0 +1,70 @@
+on:
+  workflow_call:
+    secrets:
+      aws_assume_role:
+        description: "AWS role to assume"
+        required: false
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: string
+      aws_region:
+        description: "AWS region"
+        required: true
+        type: string
+      helm_chart_path:
+        description: "Path to the Helm chart"
+        required: true
+        type: string
+      helm_chart_name:
+        description: "Name of the Helm chart"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container: # Replace with GitHub action in the future
+      image: public.ecr.aws/truemark/aws-cdk:ubuntu
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: docker-tag
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # TODO Convert to secret
+          role-to-assume: "${{ vars.AWS_ASSUME_ROLE_DEPLOY }}"
+          aws-region: "${{ inputs.aws_region }}"
+
+      # TODO Get rid of separate role
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "${{ vars.AWS_ASSUME_ROLE_DEPLOY }}"
+          aws-region: "${{ inputs.aws_region }}"
+
+      - name: Get Docker Image Tag
+        shell: bash
+        run: | 
+          echo "IMAGE_TAG=$(cat docker-tag.txt)" >> $GITHUB_ENV
+
+      - name: Setup Cluster Access
+        run: |
+          aws eks update-kubeconfig --name ${{ vars.CLUSTER_NAME }} --kubeconfig ./kubeconfig
+          echo 'KUBE_CONFIG_DATA<<EOF' >> $GITHUB_ENV
+          echo $(cat ./kubeconfig | base64) >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+        env:
+          AWS_REGION: "${{ inputs.aws_region }}"
+
+      - name: Helm Deploy
+        uses: koslib/helm-eks-action@v1.28.0
+        env:
+          KUBE_CONFIG_DATA: ${{ env.KUBE_CONFIG_DATA }}
+        with:
+          command: helm upgrade --install --wait --atomic --set image.tag=$IMAGE_TAG -f ${{ inputs.helm_chart_path }}/values.yaml ${{ inputs.helm_chart_name }} ${{ inputs.helm_chart_path }}
