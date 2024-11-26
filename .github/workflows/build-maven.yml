@@ -1,3 +1,4 @@
+name: Build Maven
 on:
   workflow_call:
     inputs:
