@@ -43,7 +43,7 @@ jobs:
           echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_ENV
 
       - name: Install kubectl and yq
-        uses: truemark/github-kubectl@converting-to-typescript
+        uses: truemark/kubectl-action@converting-to-typescript
         with:
           kubectl-enabled: true
           yq-enabled: true
