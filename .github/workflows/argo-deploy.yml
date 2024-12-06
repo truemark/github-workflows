@@ -35,7 +35,7 @@ jobs:
         with:
           # TODO Convert to secret
           role-to-assume: "${{ vars.AWS_ASSUME_ROLE_DEPLOY }}"
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: "us-east-1"
 
       - name: Get Docker Image Tag
         shell: bash
