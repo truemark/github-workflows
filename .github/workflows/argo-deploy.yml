@@ -2,47 +2,119 @@ name: ArgoCD Deployment
 
 on:
   workflow_call:
+    secrets:
+      aws_assume_role:
+        description: "AWS role to assume"
+        required: false
+      app-id:
+        description: "App Id"
+        required: true
+      private-key:
+        description: "Private Key"
+        required: true
     inputs:
-      helm_chart_path:
-        description: "Path to the Helm chart"
-        required: true
-        type: string
-      github_user:
-        description: "GitHub user"
-        required: true
-        type: string
-      github_email:
-        description: "GitHub email"
+      environment:
+        description: "Environment to deploy to"
         required: true
         type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    #    container: # Replace with GitHub action in the future
+    #      image: public.ecr.aws/truemark/aws-cdk:ubuntu
+    environment: ${{ inputs.environment }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: image-tag
 
-      - name: Set New Docker Tag
-        run: echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_ENV
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          # TODO Convert to secret
+          role-to-assume: "${{ vars.AWS_ASSUME_ROLE_DEPLOY }}"
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Update Tag in values.yaml
+      - name: Get Docker Image Tag
+        shell: bash
         run: |
-          sed -i "s/^  tag: .*/  tag: ${IMAGE_TAG}/" ${{ inputs.helm_chart_path }}/values.yaml
+          echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_ENV
 
-      - name: Update Tag in Chart.yaml
-        run: |
-          sed -i "s/^appVersion: .*/appVersion: \"${IMAGE_TAG}\"/" ${{ inputs.helm_chart_path }}/Chart.yaml
+      - name: Install kubectl and yq
+        uses: truemark/github-kubectl@converting-to-typescript
+        with:
+          kubectl-enabled: true
+          yq-enabled: true
 
-      - name: Push Updates to values.yaml
+      - name: Generate token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3
+        with:
+          app_id: ${{ secrets.app-id }}
+          private_key: ${{ secrets.private-key }}
+
+      - name: Checkout tools repo
+        uses: actions/checkout@v4
+        with:
+          repository: truemark/k8s-deployments
+          token: ${{ steps.app-token.outputs.token }}
+          path: k8s-deployments
+
+      - name: Update image tag in values.yaml
         run: |
-          git config --global user.name '${{ inputs.github_user }}'
-          git config --global user.email '${{ inputs.github_email }}'
-          git add ${{ inputs.helm_chart_path }}/*
-          git commit -m "Update Docker Image. [skip ci]"
-          git push
+          cd k8s-deployments
+          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i applications/hello-world/${{ inputs.environment }}.yaml
+          echo "Updated values.yaml with IMAGE_TAG=$IMAGE_TAG."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add applications/hello-world/${{ inputs.environment }}.yaml
+          git commit -m "Update image tag to $IMAGE_TAG"
+          git push origin main
+
+      - name: Poll application status
+        env:
+          APP_NAME: hello-world
+        run: |
+          aws eks update-kubeconfig --region us-east-2 --name ${{ vars.CLUSTER_NAME }}
+          echo "Polling application status for $APP_NAME..."
+          
+          INITIAL_CHECK_DONE=false
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
+          STATUS=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.sync.status}')
+          HEALTH=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.health.status}')
+          echo "$(date): Sync status: $STATUS, Health status: $HEALTH"
+          
+          # Ignore the initial Healthy/Synced state
+          if [[ "$INITIAL_CHECK_DONE" == "false" ]]; then
+          echo "Ignoring initial status: Sync=$STATUS, Health=$HEALTH"
+          if [[ "$STATUS" != "Synced" || "$HEALTH" != "Healthy" ]]; then
+          INITIAL_CHECK_DONE=true
+          fi
+          else
+          # Check for successful sync and healthy state
+          if [[ "$STATUS" == "Synced" && "$HEALTH" == "Healthy" ]]; then
+          echo "Application $APP_NAME successfully synced and healthy."
+          break
+          fi
+          fi
+          
+          # Increment the attempt counter
+          ATTEMPT=$((ATTEMPT + 1))
+          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS complete. Retrying in 10 seconds..."
+          
+          # Wait for 10 seconds before polling again
+          sleep 10
+          done
+          
+          if [[ $ATTEMPT -ge $MAX_ATTEMPTS ]]; then
+          echo "Reached maximum attempts ($MAX_ATTEMPTS). Exiting with failure."
+          exit 1
+          fi
+          
+          echo "Recent events for $APP_NAME:"
+          kubectl get -n argocd events --field-selector involvedObject.name=$APP_NAME --sort-by='.metadata.creationTimestamp' -o wide | tail -n 5
