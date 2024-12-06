@@ -45,7 +45,6 @@ jobs:
       - name: Install kubectl and yq
         uses: truemark/kubectl-action@converting-to-typescript
         with:
-#          kubectl-enabled: true
           yq-enabled: true
 
       - name: Generate token
