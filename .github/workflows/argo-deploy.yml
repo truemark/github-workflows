@@ -1,10 +1,7 @@
 name: ArgoCD Deployment
 
 on:
-  workflow_run:
-    workflows: [ "Build Docker" ]
-    types:
-      - completed
+  workflow_call:
     secrets:
       aws_assume_role:
         description: "AWS role to assume"
