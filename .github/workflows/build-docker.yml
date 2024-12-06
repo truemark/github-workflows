@@ -1,6 +1,6 @@
 name: Build Docker
 on:
-  workflow_dispatch:
+  workflow_call:
     secrets:
       aws_assume_role:
         description: "AWS role to assume"
