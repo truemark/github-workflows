@@ -52,7 +52,7 @@ jobs:
       - name: Get Docker Image Tag
         shell: bash
         run: | 
-          echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
 
       - name: Setup Cluster Access
         run: |
