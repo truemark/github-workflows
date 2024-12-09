@@ -101,7 +101,7 @@ jobs:
           echo ${{ inputs.version }} > image-tag.txt
 
       - name: Set Image Tag
-        run: echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
+        run: echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_ENV
 
       - name: Upload Docker Image Tag
         uses: actions/upload-artifact@v4
