@@ -28,7 +28,6 @@ jobs:
   values-update:
     runs-on: ubuntu-latest
     steps:
-
       - name: Install Kubectl and YQ
         uses: truemark/kubectl-action@converting-to-typescript
         with:
