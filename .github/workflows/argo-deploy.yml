@@ -62,32 +62,76 @@ jobs:
           path: k8s-deployments
 
       - name: Update image tag in values.yaml
+        id: copy-updates
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
         run: |
+          APP_FILE="k8s/hello-world.yaml"
+          ENVIRONMENT="${{ inputs.environment }}"
+          sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
+          echo "Checking if ArgoCD Application ${{ env.APP_NAME }} exists..."
+          kubectl apply -f $APP_FILE
+          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
+          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/hello-world/values.yaml
+          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/hello-world/${{ inputs.environment }}.yaml
           cd k8s-deployments
-          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i applications/hello-world/${{ inputs.environment }}.yaml
-          echo "Updated values.yaml with IMAGE_TAG=$IMAGE_TAG."
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add applications/hello-world/${{ inputs.environment }}.yaml
+          git add environments/${{ inputs.environment }}
+          git diff --staged > ../image_diff_output.txt
           git commit -m "Update image tag to $IMAGE_TAG"
           git push origin main
+          if [[ $? -ne 0 ]]; then
+            echo "PUSH_FAILED=true" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: Failure Summary
+        if: env.PUSH_FAILED == 'true' || failure() && steps.copy-updates.outcome == 'failure'
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          if [ "$PUSH_FAILED" == "true" ]; then
+            echo ":x: Git push failed for $APP_NAME :x:" >> $GITHUB_STEP_SUMMARY
+            echo "### Git Push Output" >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+            cat git_push_output.txt >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Successful Summary
+        if: env.PUSH_FAILED != 'true'
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          if [ -f ./image_diff_output.txt ]; then
+            {
+              echo '### Changes Applied:';
+              echo '';
+              echo '```diff';
+              cat ./image_diff_output.txt;
+              echo '```';
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No changes detected in the diff output." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Poll application status
+        if: env.PUSH_FAILED != 'true' && steps.failure-summary.outcome != 'success'
         env:
           APP_NAME: hello-world
         run: |
-          aws eks update-kubeconfig --region us-east-2 --name ${{ vars.CLUSTER_NAME }}
           echo "Polling application status for $APP_NAME..."
-          
+
           INITIAL_CHECK_DONE=false
           MAX_ATTEMPTS=30
           ATTEMPT=0
-          
+
           while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
           STATUS=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.sync.status}')
           HEALTH=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.health.status}')
           echo "$(date): Sync status: $STATUS, Health status: $HEALTH"
-          
+
           # Ignore the initial Healthy/Synced state
           if [[ "$INITIAL_CHECK_DONE" == "false" ]]; then
           echo "Ignoring initial status: Sync=$STATUS, Health=$HEALTH"
@@ -101,19 +145,19 @@ jobs:
           break
           fi
           fi
-          
+
           # Increment the attempt counter
           ATTEMPT=$((ATTEMPT + 1))
           echo "Attempt $ATTEMPT/$MAX_ATTEMPTS complete. Retrying in 10 seconds..."
-          
+
           # Wait for 10 seconds before polling again
           sleep 10
           done
-          
+
           if [[ $ATTEMPT -ge $MAX_ATTEMPTS ]]; then
           echo "Reached maximum attempts ($MAX_ATTEMPTS). Exiting with failure."
           exit 1
           fi
-          
+
           echo "Recent events for $APP_NAME:"
           kubectl get -n argocd events --field-selector involvedObject.name=$APP_NAME --sort-by='.metadata.creationTimestamp' -o wide | tail -n 5
