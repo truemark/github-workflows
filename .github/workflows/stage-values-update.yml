@@ -5,10 +5,8 @@ on:
     secrets:
       app_id:
         required: true
-        type: string
       private_key:
         required: true
-        type: string
 
 permissions:
   id-token: write
