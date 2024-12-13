@@ -2,7 +2,7 @@ name: Stage Values Update
 
 on:
   workflow_call:
-    inputs:
+    secrets:
       app_id:
         required: true
         type: string
@@ -49,8 +49,8 @@ jobs:
         id: app-token
         uses: getsentry/action-github-app-token@v3
         with:
-          app_id: ${{ inputs.app_id }}
-          private_key: ${{ inputs.private_key }}
+          app_id: ${{ secrets.app_id }}
+          private_key: ${{ secrets.private_key }}
 
       - name: Checkout Deployment Repo
         uses: actions/checkout@v4
