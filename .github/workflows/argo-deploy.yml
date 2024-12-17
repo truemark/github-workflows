@@ -71,25 +71,23 @@ jobs:
 
       - name: Update image tag in values.yaml
         id: copy-updates
-        env:
-          APP_NAME: ${{ inputs.app_name }}
         run: |
           set -xe
           APP_FILE="k8s/argocd.yaml"
           ENVIRONMENT="${{ inputs.environment }}"
           sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
-          echo "Checking if ArgoCD Application $APP_NAME exists..."
+          echo "Checking if ArgoCD Application ${{ inputs.app_name }} exists..."
           kubectl apply -f $APP_FILE
           yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
-          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/$APP_NAME/values.yaml
-          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/$APP_NAME/${{ inputs.environment }}.yaml
+          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml
+          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
           cd k8s-deployments
           if [[ ${{ inputs.environment }} == "prod" ]]; then
-            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/$APP_NAME/values.yaml \
-            environments/prod/$APP_NAME/values.yaml > environments/prod/$APP_NAME/values.tmp
-            mv environments/prod/$APP_NAME/values.yaml environments/prod/$APP_NAME/orig-values.yaml && \
-            mv environments/prod/$APP_NAME/values.tmp environments/prod/$APP_NAME/values.yaml
-            rm -f environments/prod/$APP_NAME/orig-values.yaml
+            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/${{ inputs.app_name }}/values.yaml \
+            environments/prod/${{ inputs.app_name }}/values.yaml > environments/prod/${{ inputs.app_name }}/values.tmp
+            mv environments/prod/${{ inputs.app_name }}/values.yaml environments/prod/${{ inputs.app_name }}/orig-values.yaml && \
+            mv environments/prod/${{ inputs.app_name }}/values.tmp environments/prod/${{ inputs.app_name }}/values.yaml
+            rm -f environments/prod/${{ inputs.app_name }}/orig-values.yaml
           fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -138,18 +136,16 @@ jobs:
 
       - name: Poll application status
         if: env.PUSH_FAILED != 'true' && steps.failure-summary.outcome != 'success'
-        env:
-          APP_NAME: ${{ inputs.app_name }}
         run: |
-          echo "Polling application status for $APP_NAME..."
+          echo "Polling application status for ${{ inputs.app_name }}..."
 
           INITIAL_CHECK_DONE=false
           MAX_ATTEMPTS=30
           ATTEMPT=0
 
           while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
-          STATUS=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.sync.status}')
-          HEALTH=$(kubectl get -n argocd application/$APP_NAME -o jsonpath='{.status.health.status}')
+          STATUS=$(kubectl get -n argocd application/${{ inputs.app_name }} -o jsonpath='{.status.sync.status}')
+          HEALTH=$(kubectl get -n argocd application/${{ inputs.app_name }} -o jsonpath='{.status.health.status}')
           echo "$(date): Sync status: $STATUS, Health status: $HEALTH"
 
           # Ignore the initial Healthy/Synced state
