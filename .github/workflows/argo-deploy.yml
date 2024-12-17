@@ -75,7 +75,7 @@ jobs:
           APP_NAME: ${{ inputs.app_name }}
         run: |
           set -xe
-          APP_FILE="k8s/hello-world.yaml"
+          APP_FILE="k8s/argocd.yaml"
           ENVIRONMENT="${{ inputs.environment }}"
           sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
           echo "Checking if ArgoCD Application $APP_NAME exists..."
