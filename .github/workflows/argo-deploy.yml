@@ -74,6 +74,7 @@ jobs:
         env:
           APP_NAME: ${{ inputs.app_name }}
         run: |
+          set -xe
           APP_FILE="k8s/hello-world.yaml"
           ENVIRONMENT="${{ inputs.environment }}"
           sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
