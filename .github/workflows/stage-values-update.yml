@@ -28,7 +28,7 @@ jobs:
       - name: Setup Environment
         id: setup-environment
         run: |
-          UPDATED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^kubernetes/')
+          UPDATED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^k8s/')
           if [[ -z "$UPDATED_FILES" ]]; then
             echo "No files were updated. Exiting."
             exit 1
