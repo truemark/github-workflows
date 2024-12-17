@@ -25,7 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
-      APP_NAME: ${{ steps.setup-environment.outputs.APP_NAME }}
       UPDATED_FILES: ${{ steps.setup-environment.outputs.UPDATED_FILES }}
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +41,7 @@ jobs:
           fi
           echo $UPDATED_FILES > updated_files.txt
           echo "UPDATED_FILES=$(cat updated_files.txt)" >> $GITHUB_ENV
-          echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
+          echo "APP_NAME=${{ inputs.app_name }}" >> $GITHUB_ENV
 
       - name: Install Kubectl and YQ
         uses: truemark/kubectl-action@converting-to-typescript
@@ -112,7 +111,6 @@ jobs:
       - name: Failure Summary
         if: env.NO_CHANGES == 'true' || env.PUSH_FAILED == 'true' || failure() && steps.copy-updates.outcome == 'failure'
         env:
-          APP_NAME: ${{ env.APP_NAME }}
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
           if [ "$NO_CHANGES" == "true" ]; then
@@ -130,7 +128,6 @@ jobs:
       - name: Successful Summary
         if: env.NO_CHANGES != 'true' && env.PUSH_FAILED != 'true'
         env:
-          APP_NAME: ${{ env.APP_NAME }}
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
           if [ -f ./diff_output.txt ]; then
