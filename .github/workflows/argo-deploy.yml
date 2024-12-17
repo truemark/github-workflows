@@ -82,7 +82,7 @@ jobs:
           cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
           cd k8s-deployments
           if [[ ${{ inputs.environment }} == "prod" ]]; then
-            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/${{ inputs.app_name }}/values.yaml \
+            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml \
             environments/prod/${{ inputs.app_name }}/values.yaml > environments/prod/${{ inputs.app_name }}/values.tmp
             mv environments/prod/${{ inputs.app_name }}/values.yaml environments/prod/${{ inputs.app_name }}/orig-values.yaml && \
             mv environments/prod/${{ inputs.app_name }}/values.tmp environments/prod/${{ inputs.app_name }}/values.yaml
