@@ -68,23 +68,23 @@ jobs:
       - name: Update image tag in values.yaml
         id: copy-updates
         env:
-          APP_NAME: ${{ env.APP_NAME }}
+          APP_NAME: ${{ inputs.APP_NAME }}
         run: |
           APP_FILE="k8s/hello-world.yaml"
           ENVIRONMENT="${{ inputs.environment }}"
           sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
-          echo "Checking if ArgoCD Application ${{ env.APP_NAME }} exists..."
+          echo "Checking if ArgoCD Application $APP_NAME exists..."
           kubectl apply -f $APP_FILE
           yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
-          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/values.yaml
-          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/${{ inputs.environment }}.yaml
+          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/$APP_NAME/values.yaml
+          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/$APP_NAME/${{ inputs.environment }}.yaml
           cd k8s-deployments
           if ${{ inputs.environment }} == "prod"; then
-            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/${{ env.APP_NAME }}/values.yaml \
-            environments/prod/${{ env.APP_NAME }}/values.yaml > environments/prod/${{ env.APP_NAME }}/values.tmp
-            mv environments/prod/${{ env.APP_NAME }}/values.yaml environments/prod/${{ env.APP_NAME }}/orig-values.yaml && \
-            mv environments/prod/${{ env.APP_NAME }}/values.tmp environments/prod/${{ env.APP_NAME }}/values.yaml
-            rm -f environments/prod/${{ env.APP_NAME }}/orig-values.yaml
+            yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/$APP_NAME/values.yaml \
+            environments/prod/$APP_NAME/values.yaml > environments/prod/$APP_NAME/values.tmp
+            mv environments/prod/$APP_NAME/values.yaml environments/prod/$APP_NAME/orig-values.yaml && \
+            mv environments/prod/$APP_NAME/values.tmp environments/prod/$APP_NAME/values.yaml
+            rm -f environments/prod/$APP_NAME/orig-values.yaml
           fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -100,7 +100,7 @@ jobs:
       - name: Failure Summary
         if: env.PUSH_FAILED == 'true' || failure() && steps.copy-updates.outcome == 'failure'
         env:
-          APP_NAME: ${{ env.APP_NAME }}
+          APP_NAME: ${{ inputs.APP_NAME }}
         run: |
           if [ "$PUSH_FAILED" == "true" ]; then
             echo ":x: Git push failed for $APP_NAME :x:" >> $GITHUB_STEP_SUMMARY
@@ -113,7 +113,7 @@ jobs:
       - name: Successful Summary
         if: env.PUSH_FAILED != 'true'
         env:
-          APP_NAME: ${{ env.APP_NAME }}
+          APP_NAME: ${{ inputs.APP_NAME }}
         run: |
           if [ -f ./image_diff_output.txt ]; then
             {
