@@ -76,9 +76,14 @@ jobs:
           echo "Checking if ArgoCD Application ${{ env.APP_NAME }} exists..."
           kubectl apply -f $APP_FILE
           yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
-          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/hello-world/values.yaml
-          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/hello-world/${{ inputs.environment }}.yaml
+          cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/values.yaml
+          cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/${{ inputs.environment }}.yaml
           cd k8s-deployments
+          yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/${{ env.APP_NAME }}/values.yaml \
+          environments/prod/${{ env.APP_NAME }}/values.yaml > environments/prod/${{ env.APP_NAME }}/values.tmp
+          mv environments/prod/${{ env.APP_NAME }}/values.yaml environments/prod/${{ env.APP_NAME }}/orig-values.yaml && \
+          mv environments/prod/${{ env.APP_NAME }}/values.tmp environments/prod/${{ env.APP_NAME }}/values.yaml
+          rm -f environments/prod/${{ env.APP_NAME }}/orig-values.yaml
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add environments/${{ inputs.environment }}
