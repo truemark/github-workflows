@@ -7,6 +7,13 @@ on:
         required: true
       private_key:
         required: true
+    inputs:
+      environment:
+        required: true
+        type: string
+      app_name:
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -16,7 +23,7 @@ jobs:
   stage-values-update:
     name: Update Values for Stage
     runs-on: ubuntu-latest
-    environment: stage
+    environment: ${{ inputs.environment }}
     outputs:
       APP_NAME: ${{ steps.setup-environment.outputs.APP_NAME }}
       UPDATED_FILES: ${{ steps.setup-environment.outputs.UPDATED_FILES }}
@@ -35,7 +42,7 @@ jobs:
           fi
           echo $UPDATED_FILES > updated_files.txt
           echo "UPDATED_FILES=$(cat updated_files.txt)" >> $GITHUB_ENV
-          echo "APP_NAME=hello-world" >> $GITHUB_ENV
+          echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
 
       - name: Install Kubectl and YQ
         uses: truemark/kubectl-action@converting-to-typescript
@@ -64,11 +71,11 @@ jobs:
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
           for file in ${{ env.UPDATED_FILES }}; do
-            cp "$file" "k8s-deployments/environments/stage/${{ env.APP_NAME }}/"
+            cp "$file" "k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
           done
           
           cd k8s-deployments
-          git add -- "environments/stage/${{ env.APP_NAME }}/"
+          git add -- "environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
           
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -80,7 +87,11 @@ jobs:
           else
             git diff --staged > ../diff_output.txt
             cat ../diff_output.txt || echo "Failed to generate diff_output.txt"
-            git commit -m "Update deployment values for stage from ${{ env.UPDATED_FILES }}"
+            if [[ ${{ inputs.environment }} == "stage" ]]; then
+              git commit -m "Update deployment values for stage."
+            else
+              git commit -m "Update deployment values for prod."
+            fi
             git push origin main
             if [[ $? -ne 0 ]]; then
               echo "PUSH_FAILED=true" >> $GITHUB_ENV
