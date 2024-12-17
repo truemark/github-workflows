@@ -6,6 +6,10 @@ on:
       - main
       - hotfix/*
   workflow_call:
+    inputs:
+      app_name:
+        required: true
+        type: string
     secrets:
       app_id:
         required: true
@@ -43,17 +47,17 @@ jobs:
       - name: Promote Stage Changes to Prod
         id: copy-updates
         run: |
-          export APP_NAME="hello-world"
-          echo "APP_NAME=hello-world" >> $GITHUB_ENV
+          export APP_NAME="${{ inputs.app_name }}"
+          echo "APP_NAME=${{ inputs.app_name }}" >> $GITHUB_ENV
           cd k8s-deployments
-          yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/hello-world/values.yaml \
-          environments/prod/hello-world/values.yaml > environments/prod/hello-world/values.tmp
-          mv environments/prod/hello-world/values.yaml environments/prod/hello-world/orig-values.yaml && \
-          mv environments/prod/hello-world/values.tmp environments/prod/hello-world/values.yaml
-          rm -f environments/prod/hello-world/orig-values.yaml
+          yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/stage/${{ inputs.app_name }}/values.yaml \
+          environments/prod/${{ inputs.app_name }}/values.yaml > environments/prod/${{ inputs.app_name }}/values.tmp
+          mv environments/prod/${{ inputs.app_name }}/values.yaml environments/prod/${{ inputs.app_name }}/orig-values.yaml && \
+          mv environments/prod/${{ inputs.app_name }}/values.tmp environments/prod/${{ inputs.app_name }}/values.yaml
+          rm -f environments/prod/${{ inputs.app_name }}/orig-values.yaml
           
-          TAG=$(yq eval '.deployment.image.tag' environments/stage/hello-world/stage.yaml)
-          yq eval ".deployment.image.tag = \"$TAG\"" environments/prod/hello-world/prod.yaml -i
+          TAG=$(yq eval '.deployment.image.tag' environments/stage/${{ inputs.app_name }}/stage.yaml)
+          yq eval ".deployment.image.tag = \"$TAG\"" environments/prod/${{ inputs.app_name }}/prod.yaml -i
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
