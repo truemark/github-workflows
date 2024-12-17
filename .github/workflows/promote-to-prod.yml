@@ -1,4 +1,4 @@
-name: Promote Changes to Prod
+name: Promote Values Changes to Prod
 
 on:
   push:
