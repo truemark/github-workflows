@@ -23,10 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
+      - name: Logging into ArgoCD
+        uses: clowdhaus/argo-cd-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARGOCD_SERVER: ${{ vars.ARGOCD_SERVER }}
+        with:
+          command: app sync
+          options: ${{ inputs.app_name }}
       - name: ArgoCD Sync ${{ inputs.app_name }}
         uses: clowdhaus/argo-cd-action/@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: app sync
-          options: ${{ inputs.app_name }} --server 'https://argocd.stage.truemark.io'
+          options: ${{ inputs.app_name }} --server 'argocd.stage.truemark.io'
