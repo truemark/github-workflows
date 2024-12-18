@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 jobs:
-  stage-values-update:
+  values-update:
     name: Update Values for Stage
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -66,15 +66,14 @@ jobs:
       - name: Copy Updates to Deployment Repo
         id: copy-updates
         env:
-          APP_NAME: ${{ env.APP_NAME }}
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
           for file in ${{ env.UPDATED_FILES }}; do
-            cp "$file" "k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
+            #cp "$file" "k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
+            yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
+            yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml 
           done
-          
-          yq eval '.' k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml > k8s/values/values.yaml 
-          yq eval '.' k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml > k8s/values/${{ inputs.environment }}.yaml
+                    
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add k8s/values/*
