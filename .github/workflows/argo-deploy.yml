@@ -79,6 +79,16 @@ jobs:
           kubectl apply -f $APP_FILE
           cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml
           cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
+          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/values/${{ inputs.environment }}.yaml
+          git commit -m "Update image tag to $IMAGE_TAG [skip ci]"
+          if [[ ${{ inputs.environment }} == "prod" ]]; then
+            git push origin main-louie
+          else
+            git push origin develop-louie
+          fi
           cd k8s-deployments
           if [[ ${{ inputs.environment }} == "prod" ]]; then
             yq eval-all 'select(fileIndex == 1) * select(fileIndex == 0)' environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml \
