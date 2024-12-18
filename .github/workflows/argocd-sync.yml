@@ -1,14 +1,49 @@
-name: Sync Application using ArgoCD
+name: ArgoCD Sync
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - testing
+  workflow_call:
     inputs:
       app_name:
-        description: 'The name of the application to deploy'
         required: true
         type: string
+      environment:
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: write
 
 jobs:
   argocd-sync:
     name: Syncing ${{ inputs.app_name }} in ArgoCD
-    uses: truemark/github-workflows/.github/workflows/argocd-sync.yml@argocd-demo
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Kubectl and YQ
+        uses: truemark/kubectl-action@converting-to-typescript
+        with:
+          yq-enabled: true
+          kubectl-enabled: true
+
+      - name: Generate token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3
+        with:
+          app_id: ${{ secrets.RELEASE_BOT_ID }}
+          private_key: ${{ secrets.RELEASE_BOT_KEY }}
+
+      - name: ArgoCD Sync ${{ inputs.app_name }}
+        uses: clowdhaus/argo-cd-action/@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          command: version
+          options: --client
