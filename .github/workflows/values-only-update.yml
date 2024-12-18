@@ -77,11 +77,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          for file in ${{ env.UPDATED_FILES }}; do
-            git add $file
-          done
-          
           if [[ ${{ inputs.environment }} == "prod" ]]; then
+            git switch main-louie
+            for file in ${{ env.UPDATED_FILES }}; do
+              git add $file
+            done
             git commit -m "Creating copy of values to main-louie [skip ci]"
             git push origin main-louie
             if [[ $? -ne 0 ]]; then
@@ -89,6 +89,10 @@ jobs:
               exit 1
             fi
           else
+            git switch develop-louie
+            for file in ${{ env.UPDATED_FILES }}; do
+              git add $file
+            done
             git commit -m "Creating copy of values to develop-louie [skip ci]"
             git push origin develop-louie
             if [[ $? -ne 0 ]]; then
