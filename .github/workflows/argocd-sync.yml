@@ -23,23 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Kubectl and YQ
-        uses: truemark/kubectl-action@converting-to-typescript
-        with:
-          yq-enabled: true
-          kubectl-enabled: true
-
-      - name: Generate token
-        id: app-token
-        uses: getsentry/action-github-app-token@v3
-        with:
-          app_id: ${{ secrets.RELEASE_BOT_ID }}
-          private_key: ${{ secrets.RELEASE_BOT_KEY }}
-
       - name: ArgoCD Sync ${{ inputs.app_name }}
         uses: clowdhaus/argo-cd-action/@main
         env:
