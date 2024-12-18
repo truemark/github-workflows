@@ -74,6 +74,7 @@ jobs:
           for file in ${{ env.UPDATED_FILES }}; do  
             if [[ ${{ inputs.environment }} == "prod" ]]; then
               git switch main-louie
+              git fetch
               git add $file
               git commit -m "Creating copy of values to main-louie [skip ci]"
               git push origin main-louie
@@ -83,6 +84,7 @@ jobs:
               fi
             else
               git switch develop-louie
+              git fetch
               git add $file
               git commit -m "Creating copy of values to develop-louie [skip ci]"
               git push origin develop-louie
