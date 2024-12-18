@@ -68,38 +68,34 @@ jobs:
         env:
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
-          for file in ${{ env.UPDATED_FILES }}; do
-            #cp "$file" "k8s-deployments/environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
-            yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
-            yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml 
+          for file in ${{ env.UPDATED_FILES }}; do  
+            if [[ ${{ inputs.environment }} == "prod" ]]; then
+              git switch main-louie
+              git add $file
+              yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
+              yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
+              git commit -m "Creating copy of values to main-louie [skip ci]"
+              git push origin main-louie
+              if [[ $? -ne 0 ]]; then
+                echo "PUSH_FAILED=true" >> $GITHUB_ENV
+                exit 1
+              fi
+            else
+              git switch develop-louie
+              git add $file
+              yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
+              yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
+              git commit -m "Creating copy of values to develop-louie [skip ci]"
+              git push origin develop-louie
+              if [[ $? -ne 0 ]]; then
+                echo "PUSH_FAILED=true" >> $GITHUB_ENV
+                exit 1
+              fi
+            fi
           done
                     
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          if [[ ${{ inputs.environment }} == "prod" ]]; then
-            git switch main-louie
-            for file in ${{ env.UPDATED_FILES }}; do
-              git add $file
-            done
-            git commit -m "Creating copy of values to main-louie [skip ci]"
-            git push origin main-louie
-            if [[ $? -ne 0 ]]; then
-              echo "PUSH_FAILED=true" >> $GITHUB_ENV
-              exit 1
-            fi
-          else
-            git switch develop-louie
-            for file in ${{ env.UPDATED_FILES }}; do
-              git add $file
-            done
-            git commit -m "Creating copy of values to develop-louie [skip ci]"
-            git push origin develop-louie
-            if [[ $? -ne 0 ]]; then
-              echo "PUSH_FAILED=true" >> $GITHUB_ENV
-              exit 1
-            fi
-          fi
           
           cd k8s-deployments
           git add -- "environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
