@@ -68,6 +68,9 @@ jobs:
         env:
           UPDATED_FILES: ${{ env.UPDATED_FILES }}
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
           for file in ${{ env.UPDATED_FILES }}; do  
             if [[ ${{ inputs.environment }} == "prod" ]]; then
               git switch main-louie
@@ -94,9 +97,6 @@ jobs:
             fi
           done
                     
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
           cd k8s-deployments
           git add -- "environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
           
