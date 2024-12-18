@@ -1,4 +1,4 @@
-name: ArgoCD Sync
+name: Sync Application using ArgoCD
 
 on:
   workflow_dispatch:
@@ -11,15 +11,4 @@ on:
 jobs:
   argocd-sync:
     name: Syncing ${{ inputs.app_name }} in ArgoCD
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Deployment Repo
-        uses: actions/checkout@v4
-
-      - name: Sync ${{ inputs.app_name }} Application
-        uses: clowdhaus/argo-cd-action/@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          command: version
-          options: --client
+    uses: truemark/github-workflows/.github/workflows/argocd-sync.yml@argocd-demo
