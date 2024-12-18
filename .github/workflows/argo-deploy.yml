@@ -77,7 +77,6 @@ jobs:
           sed -i "s/{{environment}}/${ENVIRONMENT}/g" $APP_FILE
           echo "Checking if ArgoCD Application ${{ inputs.app_name }} exists..."
           kubectl apply -f $APP_FILE
-          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i k8s/values/${{ inputs.environment }}.yaml
           cp -r k8s/values/values.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml
           cp -r k8s/values/${{ inputs.environment }}.yaml k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
           cd k8s-deployments
@@ -88,6 +87,7 @@ jobs:
             mv environments/prod/${{ inputs.app_name }}/values.tmp environments/prod/${{ inputs.app_name }}/values.yaml
             rm -f environments/prod/${{ inputs.app_name }}/orig-values.yaml
           fi
+          yq eval ".deployment.image.tag = \"$IMAGE_TAG\"" -i environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add environments/${{ inputs.environment }}
