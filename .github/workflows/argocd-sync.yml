@@ -31,21 +31,15 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - name: Generate token
-        id: app-token
-        uses: getsentry/action-github-app-token@v3
-        with:
-          app_id: ${{ secrets.app_id }}
-          private_key: ${{ secrets.private_key }}
-
       - name: Logging into ArgoCD
         uses: clowdhaus/argo-cd-action@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARGOCD_SERVER: ${{ env.ARGOCD_SERVER }}
+          ARGOCD_USERNAME: ${{ vars.ARGOCD_USER }}
+          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
         with:
           command: login
-          options: ${{ env.ARGOCD_SERVER }} --auth-token ${{ steps.app-token.outputs.token }}
+          options: ${{ env.ARGOCD_SERVER }}
 
       - name: ArgoCD Sync ${{ inputs.app_name }}
         uses: clowdhaus/argo-cd-action/@main
