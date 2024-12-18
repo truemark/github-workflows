@@ -40,12 +40,11 @@ jobs:
           ARGOCD_USERNAME: ${{ vars.ARGOCD_USER }}
           ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
         with:
-          command: login
+          command: login $ARGOCD_SERVER
 
       - name: ArgoCD Sync ${{ inputs.app_name }}
         uses: clowdhaus/argo-cd-action/@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARGOCD_SERVER: ${{ env.ARGOCD_SERVER }}
         with:
           command: app sync
