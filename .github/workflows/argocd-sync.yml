@@ -29,4 +29,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           command: app sync
-          options: ${{ inputs.app_name }}
+          options: ${{ inputs.app_name }} --server 'https://argocd.stage.truemark.io'
