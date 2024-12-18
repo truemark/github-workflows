@@ -17,6 +17,12 @@ on:
         required: true
       private_key:
         required: true
+      ARGOCD_PASSWORD:
+        required: true
+      ARGOCD_SERVER:
+        required: true
+      ARGOCD_USER:
+        required: true
 
 permissions:
   id-token: write
