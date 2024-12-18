@@ -28,5 +28,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          command: app sync --name ${{ inputs.app_name }}
-          options: --client
+          command: app sync
+          options: --name ${{ inputs.app_name }}
