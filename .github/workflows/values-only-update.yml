@@ -75,8 +75,6 @@ jobs:
             if [[ ${{ inputs.environment }} == "prod" ]]; then
               git switch main-louie
               git add $file
-              yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
-              yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
               git commit -m "Creating copy of values to main-louie [skip ci]"
               git push origin main-louie
               if [[ $? -ne 0 ]]; then
@@ -86,8 +84,6 @@ jobs:
             else
               git switch develop-louie
               git add $file
-              yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
-              yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
               git commit -m "Creating copy of values to develop-louie [skip ci]"
               git push origin develop-louie
               if [[ $? -ne 0 ]]; then
@@ -98,6 +94,8 @@ jobs:
           done
                     
           cd k8s-deployments
+          yq eval '.' k8s/values/values.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/values.yaml  
+          yq eval '.' k8s/values/${{ inputs.environment }}.yaml > k8s-deployments/environments/${{ inputs.environment }}/${{ inputs.app_name }}/${{ inputs.environment }}.yaml
           git add -- "environments/${{ inputs.environment }}/${{ env.APP_NAME }}/"
           
           git config --global user.name "github-actions[bot]"
