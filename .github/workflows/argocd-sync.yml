@@ -13,10 +13,6 @@ on:
         required: true
         type: string
     secrets:
-      app_id:
-        required: true
-      private_key:
-        required: true
       ARGOCD_PASSWORD:
         required: true
       ARGOCD_SERVER:
