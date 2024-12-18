@@ -80,9 +80,17 @@ jobs:
           if [[ ${{ inputs.environment }} == "prod" ]]; then
             git commit -m "Creating copy of values to main-louie [skip ci]"
             git push origin main-louie
+            if [[ $? -ne 0 ]]; then
+              echo "PUSH_FAILED=true" >> $GITHUB_ENV
+              exit 1
+            fi
           else
             git commit -m "Creating copy of values to develop-louie [skip ci]"
             git push origin develop-louie
+            if [[ $? -ne 0 ]]; then
+              echo "PUSH_FAILED=true" >> $GITHUB_ENV
+              exit 1
+            fi
           fi
           
           cd k8s-deployments
