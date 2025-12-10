@@ -13,7 +13,7 @@ on:
       node-versions:
         description: 'Node versions to use'
         required: false
-        default: '[18,20,22]'
+        default: '[20,22,24]'
         type: string
       publish-node-version:
         description: 'Node version to use for publish'
